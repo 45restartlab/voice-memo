@@ -5,21 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0a0a0f">
+<meta name="theme-color" content="#dce6ee">
 <title>声メモ</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;600&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --surface2: #1a1a24;
-    --border: #2a2a38;
-    --accent: #7c6bff;
-    --text: #e8e8f0;
-    --text2: #888899;
-    --text3: #444455;
-    --red: #ff4466;
-    --green: #44ffaa;
+    --bg:       #dce6ee;
+    --bg2:      #cdd9e4;
+    --surface:  #e8eff5;
+    --surface2: #f2f6fa;
+    --border:   #b8cad8;
+    --border2:  #cddae5;
+    --accent:   #6a9bb5;
+    --accent2:  #4a7d99;
+    --text:     #2e3d4a;
+    --text2:    #5a7080;
+    --text3:    #8fa8b8;
+    --red:      #b05a6a;
+    --green:    #4a8a72;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -34,136 +37,169 @@
     overflow-x: hidden;
   }
 
+  /* subtle paper texture */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 50;
+  }
+
   header {
-    padding: 20px 24px 16px;
+    padding: 22px 24px 18px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: baseline;
-    gap: 10px;
+    gap: 12px;
+    background: var(--surface2);
   }
 
   header h1 {
-    font-family: 'Syne', sans-serif;
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--text);
   }
 
   header span {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text3);
-    letter-spacing: 2px;
+    letter-spacing: 2.5px;
     text-transform: uppercase;
   }
 
+  /* ── Recorder ── */
   .recorder {
-    padding: 28px 24px 24px;
+    padding: 28px 24px 26px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap: 18px;
     border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--surface2) 0%, var(--bg) 100%);
   }
 
   canvas#wave {
     width: 100%;
-    height: 56px;
-    border-radius: 8px;
+    height: 52px;
+    border-radius: 6px;
     display: block;
   }
 
   .timer {
-    font-family: 'Syne', sans-serif;
-    font-size: 48px;
-    font-weight: 700;
-    letter-spacing: -3px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 52px;
+    font-weight: 300;
+    letter-spacing: -2px;
     line-height: 1;
+    color: var(--text);
   }
 
   .timer.recording { color: var(--red); }
 
   .btn-record {
-    width: 80px;
-    height: 80px;
+    width: 78px;
+    height: 78px;
     border-radius: 50%;
-    border: none;
-    background: var(--accent);
+    border: 2px solid var(--border);
+    background: var(--surface2);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 36px rgba(124,107,255,0.4);
-    transition: transform 0.15s;
+    box-shadow: 0 4px 20px rgba(106,155,181,0.2), inset 0 1px 0 rgba(255,255,255,0.6);
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
   }
 
-  .btn-record:active { transform: scale(0.91); }
+  .btn-record::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    transition: background 0.2s, transform 0.15s;
+    box-shadow: 0 2px 12px rgba(106,155,181,0.4);
+  }
 
-  .btn-record.recording {
+  .btn-record svg { position: relative; z-index: 1; }
+
+  .btn-record:active { transform: scale(0.92); }
+
+  .btn-record.recording::before {
     background: var(--red);
-    box-shadow: 0 0 36px rgba(255,68,102,0.5);
     animation: pulse 1.5s infinite;
   }
 
   @keyframes pulse {
-    0%,100% { box-shadow: 0 0 36px rgba(255,68,102,0.5); }
-    50%      { box-shadow: 0 0 56px rgba(255,68,102,0.8); }
+    0%,100% { box-shadow: 0 2px 12px rgba(176,90,106,0.4); }
+    50%      { box-shadow: 0 2px 24px rgba(176,90,106,0.7); }
   }
 
   .status-text {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text3);
-    letter-spacing: 1.5px;
+    letter-spacing: 2px;
     text-transform: uppercase;
     height: 14px;
   }
   .status-text.rec  { color: var(--red); }
   .status-text.done { color: var(--green); }
 
+  /* ── List ── */
   .list-header {
-    padding: 16px 24px 10px;
+    padding: 14px 24px 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
 
   .list-header h2 {
-    font-size: 11px;
-    letter-spacing: 2px;
+    font-size: 10px;
+    letter-spacing: 2.5px;
     text-transform: uppercase;
     color: var(--text3);
   }
 
-  .memo-count { font-size: 11px; color: var(--text3); }
+  .memo-count {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 1px;
+  }
 
   .memo-list {
     flex: 1;
     overflow-y: auto;
-    padding: 0 24px 40px;
+    padding: 0 20px 40px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
   .memo-list::-webkit-scrollbar { display: none; }
 
   .memo-card {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 14px;
     display: flex;
     align-items: center;
     gap: 12px;
     animation: slideIn 0.25s ease;
+    box-shadow: 0 1px 4px rgba(100,140,165,0.08);
   }
 
   @keyframes slideIn {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(5px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
   .play-btn {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     border: 1px solid var(--border);
     background: var(--surface2);
@@ -171,11 +207,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text2);
+    color: var(--accent);
     flex-shrink: 0;
     transition: all 0.15s;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
   }
-  .play-btn:active  { background: var(--border); }
+  .play-btn:active  { background: var(--bg2); }
   .play-btn.playing { border-color: var(--green); color: var(--green); }
 
   .memo-info { flex: 1; min-width: 0; }
@@ -184,13 +221,15 @@
     font-size: 10px;
     color: var(--text3);
     letter-spacing: 1px;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
   }
 
   .memo-duration {
-    font-size: 14px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 17px;
+    font-weight: 400;
     color: var(--text);
-    letter-spacing: -0.5px;
+    letter-spacing: -0.3px;
   }
 
   .delete-btn {
@@ -213,7 +252,7 @@
     color: var(--text3);
     font-size: 12px;
     letter-spacing: 1px;
-    line-height: 2;
+    line-height: 2.2;
   }
 </style>
 </head>
@@ -228,8 +267,8 @@
   <canvas id="wave"></canvas>
   <div class="timer" id="timer">0:00</div>
   <button class="btn-record" id="btnRec">
-    <svg id="recIcon" width="30" height="30" viewBox="0 0 24 24" fill="white">
-      <circle cx="12" cy="12" r="7"/>
+    <svg id="recIcon" width="22" height="22" viewBox="0 0 24 24" fill="white">
+      <circle cx="12" cy="12" r="5"/>
     </svg>
   </button>
   <div class="status-text" id="statusText">タップして録音</div>
@@ -257,14 +296,14 @@ let memos         = JSON.parse(localStorage.getItem('voice_memos') || '[]');
 let currentAudio  = null;
 let playingId     = null;
 
-const btnRec     = document.getElementById('btnRec');
-const recIcon    = document.getElementById('recIcon');
-const timerEl    = document.getElementById('timer');
-const statusEl   = document.getElementById('statusText');
-const memoListEl = document.getElementById('memoList');
-const memoCountEl= document.getElementById('memoCount');
-const canvas     = document.getElementById('wave');
-const ctx        = canvas.getContext('2d');
+const btnRec      = document.getElementById('btnRec');
+const recIcon     = document.getElementById('recIcon');
+const timerEl     = document.getElementById('timer');
+const statusEl    = document.getElementById('statusText');
+const memoListEl  = document.getElementById('memoList');
+const memoCountEl = document.getElementById('memoCount');
+const canvas      = document.getElementById('wave');
+const ctx         = canvas.getContext('2d');
 
 function resize() {
   canvas.width  = canvas.offsetWidth  * devicePixelRatio;
@@ -281,10 +320,10 @@ function drawBars(data) {
   const W = canvas.offsetWidth, H = canvas.offsetHeight;
   ctx.clearRect(0,0,W,H);
   const bw=3, gap=2, total=Math.floor(W/(bw+gap));
-  ctx.fillStyle = isRecording ? '#ff4466' : '#7c6bff';
+  ctx.fillStyle = isRecording ? '#b05a6a' : '#6a9bb5';
   for (let i=0; i<total; i++) {
     const val = data ? data[Math.floor(i*data.length/total)]/255 : 0;
-    const bh  = Math.max(3, val*H*0.88);
+    const bh  = Math.max(2, val*H*0.85);
     ctx.beginPath();
     ctx.roundRect(i*(bw+gap),(H-bh)/2,bw,bh,1.5);
     ctx.fill();
@@ -295,9 +334,9 @@ function drawIdle() {
   const W = canvas.offsetWidth, H = canvas.offsetHeight;
   ctx.clearRect(0,0,W,H);
   const bw=3, gap=2, total=Math.floor(W/(bw+gap));
-  ctx.fillStyle = '#2a2a38';
+  ctx.fillStyle = '#b8cad8';
   for (let i=0; i<total; i++) {
-    const bh = 3 + Math.abs(Math.sin(i*0.35))*10;
+    const bh = 2 + Math.abs(Math.sin(i*0.38))*9;
     ctx.beginPath();
     ctx.roundRect(i*(bw+gap),(H-bh)/2,bw,bh,1.5);
     ctx.fill();
@@ -336,7 +375,7 @@ async function startRec() {
     isRecording = true;
     recordStart = Date.now();
     btnRec.classList.add('recording');
-    recIcon.innerHTML = '<rect x="6" y="6" width="12" height="12" rx="2"/>';
+    recIcon.innerHTML = '<rect x="7" y="7" width="10" height="10" rx="2"/>';
     statusEl.textContent = '録音中...';
     statusEl.className   = 'status-text rec';
     timerEl.classList.add('recording');
@@ -360,7 +399,7 @@ function stopRec() {
   audioCtx?.close(); analyser = null;
 
   btnRec.classList.remove('recording');
-  recIcon.innerHTML = '<circle cx="12" cy="12" r="7"/>';
+  recIcon.innerHTML = '<circle cx="12" cy="12" r="5"/>';
   timerEl.textContent = '0:00';
   timerEl.classList.remove('recording');
   statusEl.textContent = '保存しました ✓';
@@ -403,8 +442,8 @@ function renderMemos() {
     <div class="memo-card" data-id="${m.id}">
       <button class="play-btn${playingId===m.id?' playing':''}" data-id="${m.id}">
         ${playingId===m.id
-          ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
-          : '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'
+          ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
+          : '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'
         }
       </button>
       <div class="memo-info">
@@ -412,7 +451,7 @@ function renderMemos() {
         <div class="memo-duration">${formatTime(m.duration)}</div>
       </div>
       <button class="delete-btn" data-id="${m.id}">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
           <polyline points="3 6 5 6 21 6"/>
           <path d="M19 6l-1 14H6L5 6"/>
           <path d="M10 11v6M14 11v6"/>
