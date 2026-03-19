@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#dce6ee">
+<title>声メモ</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;400;600&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #dce6ee;
+    --bg2:      #cdd9e4;
+    --surface:  #e8eff5;
+    --surface2: #f2f6fa;
+    --border:   #b8cad8;
+    --border2:  #cddae5;
+    --accent:   #6a9bb5;
+    --accent2:  #4a7d99;
+    --text:     #2e3d4a;
+    --text2:    #5a7080;
+    --text3:    #8fa8b8;
+    --red:      #b05a6a;
+    --green:    #4a8a72;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* subtle paper texture */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  header {
+    padding: 22px 24px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    background: var(--surface2);
+  }
+
+  header h1 {
+    font-family: 'Crimson Pro', serif;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--text);
+  }
+
+  header span {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+  }
+
+  /* ── Recorder ── */
+  .recorder {
+    padding: 28px 24px 26px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--surface2) 0%, var(--bg) 100%);
+  }
+
+  canvas#wave {
+    width: 100%;
+    height: 52px;
+    border-radius: 6px;
+    display: block;
+  }
+
+  .timer {
+    font-family: 'Crimson Pro', serif;
+    font-size: 52px;
+    font-weight: 300;
+    letter-spacing: -2px;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .timer.recording { color: var(--red); }
+
+  .btn-record {
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(106,155,181,0.2), inset 0 1px 0 rgba(255,255,255,0.6);
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+
+  .btn-record::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    transition: background 0.2s, transform 0.15s;
+    box-shadow: 0 2px 12px rgba(106,155,181,0.4);
+  }
+
+  .btn-record svg { position: relative; z-index: 1; }
+
+  .btn-record:active { transform: scale(0.92); }
+
+  .btn-record.recording::before {
+    background: var(--red);
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 2px 12px rgba(176,90,106,0.4); }
+    50%      { box-shadow: 0 2px 24px rgba(176,90,106,0.7); }
+  }
+
+  .status-text {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    height: 14px;
+  }
+  .status-text.rec  { color: var(--red); }
+  .status-text.done { color: var(--green); }
+
+  /* ── List ── */
+  .list-header {
+    padding: 14px 24px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .list-header h2 {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .memo-count {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 1px;
+  }
+
+  .memo-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 20px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .memo-list::-webkit-scrollbar { display: none; }
+
+  .memo-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideIn 0.25s ease;
+    box-shadow: 0 1px 4px rgba(100,140,165,0.08);
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .play-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    flex-shrink: 0;
+    transition: all 0.15s;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+  .play-btn:active  { background: var(--bg2); }
+  .play-btn.playing { border-color: var(--green); color: var(--green); }
+
+  .memo-info { flex: 1; min-width: 0; }
+
+  .memo-date {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+  }
+
+  .memo-duration {
+    font-family: 'Crimson Pro', serif;
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text3);
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .delete-btn:active { color: var(--red); }
+
+  .empty-state {
+    text-align: center;
+    padding: 56px 24px;
+    color: var(--text3);
+    font-size: 12px;
+    letter-spacing: 1px;
+    line-height: 2.2;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>声メモ</h1>
+  <span>voice memo</span>
+</header>
+
+<div class="recorder">
+  <canvas id="wave"></canvas>
+  <div class="timer" id="timer">0:00</div>
+  <button class="btn-record" id="btnRec">
+    <svg id="recIcon" width="22" height="22" viewBox="0 0 24 24" fill="white">
+      <circle cx="12" cy="12" r="5"/>
+    </svg>
+  </button>
+  <div class="status-text" id="statusText">タップして録音</div>
+</div>
+
+<div class="list-header">
+  <h2>メモ一覧</h2>
+  <span class="memo-count" id="memoCount">0件</span>
+</div>
+
+<div class="memo-list" id="memoList">
+  <div class="empty-state">録音ボタンを押して<br>声でメモをとろう</div>
+</div>
+
+<script>
+let mediaRecorder = null;
+let audioChunks   = [];
+let isRecording   = false;
+let recordStart   = null;
+let timerInterval = null;
+let audioCtx      = null;
+let analyser      = null;
+let animFrame     = null;
+let memos         = JSON.parse(localStorage.getItem('voice_memos') || '[]');
+let currentAudio  = null;
+let playingId     = null;
+
+const btnRec      = document.getElementById('btnRec');
+const recIcon     = document.getElementById('recIcon');
+const timerEl     = document.getElementById('timer');
+const statusEl    = document.getElementById('statusText');
+const memoListEl  = document.getElementById('memoList');
+const memoCountEl = document.getElementById('memoCount');
+const canvas      = document.getElementById('wave');
+const ctx         = canvas.getContext('2d');
+
+function resize() {
+  canvas.width  = canvas.offsetWidth  * devicePixelRatio;
+  canvas.height = canvas.offsetHeight * devicePixelRatio;
+}
+resize();
+window.addEventListener('resize', resize);
+
+function formatTime(s) {
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+
+function drawBars(data) {
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  ctx.clearRect(0,0,W,H);
+  const bw=3, gap=2, total=Math.floor(W/(bw+gap));
+  ctx.fillStyle = isRecording ? '#b05a6a' : '#6a9bb5';
+  for (let i=0; i<total; i++) {
+    const val = data ? data[Math.floor(i*data.length/total)]/255 : 0;
+    const bh  = Math.max(2, val*H*0.85);
+    ctx.beginPath();
+    ctx.roundRect(i*(bw+gap),(H-bh)/2,bw,bh,1.5);
+    ctx.fill();
+  }
+}
+
+function drawIdle() {
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  ctx.clearRect(0,0,W,H);
+  const bw=3, gap=2, total=Math.floor(W/(bw+gap));
+  ctx.fillStyle = '#b8cad8';
+  for (let i=0; i<total; i++) {
+    const bh = 2 + Math.abs(Math.sin(i*0.38))*9;
+    ctx.beginPath();
+    ctx.roundRect(i*(bw+gap),(H-bh)/2,bw,bh,1.5);
+    ctx.fill();
+  }
+}
+
+function loopWave() {
+  if (!analyser) return;
+  const d = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(d);
+  drawBars(d);
+  animFrame = requestAnimationFrame(loopWave);
+}
+
+drawIdle();
+
+btnRec.addEventListener('click', () => isRecording ? stopRec() : startRec());
+
+async function startRec() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioCtx = new AudioContext();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    audioCtx.createMediaStreamSource(stream).connect(analyser);
+
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks   = [];
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      saveBlob(new Blob(audioChunks, { type: 'audio/webm' }), Math.floor((Date.now()-recordStart)/1000));
+    };
+    mediaRecorder.start();
+
+    isRecording = true;
+    recordStart = Date.now();
+    btnRec.classList.add('recording');
+    recIcon.innerHTML = '<rect x="7" y="7" width="10" height="10" rx="2"/>';
+    statusEl.textContent = '録音中...';
+    statusEl.className   = 'status-text rec';
+    timerEl.classList.add('recording');
+
+    timerInterval = setInterval(() => {
+      timerEl.textContent = formatTime(Math.floor((Date.now()-recordStart)/1000));
+    }, 1000);
+
+    loopWave();
+  } catch(e) {
+    statusEl.textContent = 'マイクを許可してください';
+    statusEl.className   = 'status-text rec';
+  }
+}
+
+function stopRec() {
+  mediaRecorder?.stop();
+  isRecording = false;
+  clearInterval(timerInterval);
+  cancelAnimationFrame(animFrame);
+  audioCtx?.close(); analyser = null;
+
+  btnRec.classList.remove('recording');
+  recIcon.innerHTML = '<circle cx="12" cy="12" r="5"/>';
+  timerEl.textContent = '0:00';
+  timerEl.classList.remove('recording');
+  statusEl.textContent = '保存しました ✓';
+  statusEl.className   = 'status-text done';
+  setTimeout(() => { statusEl.textContent = 'タップして録音'; statusEl.className = 'status-text'; }, 2000);
+  drawIdle();
+}
+
+async function saveBlob(blob, duration) {
+  const base64 = await new Promise(res => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.readAsDataURL(blob);
+  });
+
+  const now  = new Date();
+  const date = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  memos.unshift({ id: Date.now().toString(), date, duration, audio: base64 });
+
+  try {
+    localStorage.setItem('voice_memos', JSON.stringify(memos));
+  } catch(e) {
+    while (memos.length > 1) {
+      memos.pop();
+      try { localStorage.setItem('voice_memos', JSON.stringify(memos)); break; } catch(e2) {}
+    }
+  }
+  renderMemos();
+}
+
+function renderMemos() {
+  memoCountEl.textContent = `${memos.length}件`;
+  if (!memos.length) {
+    memoListEl.innerHTML = '<div class="empty-state">録音ボタンを押して<br>声でメモをとろう</div>';
+    return;
+  }
+
+  memoListEl.innerHTML = memos.map(m => `
+    <div class="memo-card" data-id="${m.id}">
+      <button class="play-btn${playingId===m.id?' playing':''}" data-id="${m.id}">
+        ${playingId===m.id
+          ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
+          : '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'
+        }
+      </button>
+      <div class="memo-info">
+        <div class="memo-date">${m.date}</div>
+        <div class="memo-duration">${formatTime(m.duration)}</div>
+      </div>
+      <button class="delete-btn" data-id="${m.id}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14H6L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+        </svg>
+      </button>
+    </div>
+  `).join('');
+
+  memoListEl.querySelectorAll('.play-btn').forEach(btn =>
+    btn.addEventListener('click', () => playMemo(btn.dataset.id))
+  );
+  memoListEl.querySelectorAll('.delete-btn').forEach(btn =>
+    btn.addEventListener('click', () => deleteMemo(btn.dataset.id))
+  );
+}
+
+function playMemo(id) {
+  if (playingId === id) {
+    currentAudio?.pause();
+    currentAudio = null;
+    playingId = null;
+    renderMemos();
+    return;
+  }
+  currentAudio?.pause();
+  const memo = memos.find(m => m.id === id);
+  if (!memo) return;
+  currentAudio = new Audio(memo.audio);
+  currentAudio.play();
+  playingId = id;
+  renderMemos();
+  currentAudio.onended = () => { playingId = null; renderMemos(); };
+}
+
+function deleteMemo(id) {
+  if (playingId === id) { currentAudio?.pause(); currentAudio = null; playingId = null; }
+  memos = memos.filter(m => m.id !== id);
+  localStorage.setItem('voice_memos', JSON.stringify(memos));
+  renderMemos();
+}
+
+renderMemos();
+</script>
+</body>
+</html>
